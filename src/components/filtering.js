@@ -24,10 +24,17 @@ export function initFiltering(elements, indexes) {
             }
         }
 
+        const normalizedState = {
+            ...state,
+            totalFrom: state.totalFrom ? parseFloat(state.totalFrom) : '',
+            totalTo: state.totalTo ? parseFloat(state.totalTo) : ''
+        };
+
+
         // @todo: #4.3 — настроить компаратор
         const compare = createComparison(defaultRules);
 
         // @todo: #4.5 — отфильтровать данные используя компаратор
-        return data.filter(row => compare(row, state));
+        return data.filter(row => compare(row, normalizedState));
     }
 }
