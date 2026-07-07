@@ -24,16 +24,35 @@ export function initFiltering(elements, indexes) {
             }
         }
 
-        const normalizedState = {
+        const totalFrom = state.totalFrom ? parseFloat(state.totalFrom) : null;
+        const totalTo = state.totalTo ? parseFloat(state.totalTo) : null;
+
+        // Сначала фильтруем по диапазону сумм (числовое сравнение)
+        let filteredData = data;
+        
+        if (totalFrom !== null || totalTo !== null) {
+            filteredData = data.filter(row => {
+                const total = parseFloat(row.total);
+                if (isNaN(total)) return false;
+                
+                if (totalFrom !== null && total < totalFrom) return false;
+                if (totalTo !== null && total > totalTo) return false;
+                
+                return true;
+            });
+        }
+
+        // Затем применяем остальные фильтры (текстовые)
+        const stateWithoutRange = {
             ...state,
-            totalFrom: state.totalFrom ? parseFloat(state.totalFrom) : '',
-            totalTo: state.totalTo ? parseFloat(state.totalTo) : ''
+            totalFrom: '',
+            totalTo: ''
         };
 
         // @todo: #4.3 — настроить компаратор
         const compare = createComparison(defaultRules);
 
         // @todo: #4.5 — отфильтровать данные используя компаратор
-        return data.filter(row => compare(row, normalizedState));  
+        return filteredData.filter(row => compare(row, stateWithoutRange));
     }
 }
