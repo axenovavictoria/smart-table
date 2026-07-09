@@ -18,7 +18,7 @@ import {initFiltering} from "./components/filtering.js";
 import {initSearching} from "./components/searching.js";
 
 // Исходные данные используемые в render()
-const {data, ...indexes} = initData(sourceData);
+const api = initData(sourceData);
 
 /**
  * Сбор и обработка полей из таблицы
@@ -27,7 +27,7 @@ const {data, ...indexes} = initData(sourceData);
 function collectState() {
     const state = processFormData(new FormData(sampleTable.container));
 
-    const rowsPerPage = parseInt(state.rowsPerPage);
+    const rowsPerPage = parseInt(state.rowsPerPage) || 10;
     const page = parseInt(state.page ?? 1);
 
     return {
@@ -36,6 +36,7 @@ function collectState() {
         page
     };
 }
+
 
 /**
  * Перерисовка состояния таблицы при любых изменениях
@@ -50,8 +51,14 @@ function render(action) {
     result = applySorting(result, state, action);
     result = applyPagination(result, state, action);
 
+    // Получаем данные с сервера
+    const { total, items } = await api.getRecords(query);
 
-    sampleTable.render(result)
+    // Обновляем пагинатор
+    updatePagination(total, query);
+
+    // Рендерим таблицу
+    sampleTable.render(items);
 }
 
 const sampleTable = initTable({
@@ -62,7 +69,7 @@ const sampleTable = initTable({
 }, render);
 
 // @todo: инициализация
-const applyPagination = initPagination(
+const { applyPagination, updatePagination } = initPagination(
     sampleTable.pagination.elements,
     (el, page, isCurrent) => {
         const input = el.querySelector('input');
@@ -79,14 +86,26 @@ const applySorting = initSorting([
     sampleTable.header.elements.sortByTotal
 ]);
 
-const applyFiltering = initFiltering(sampleTable.filter.elements, {
-    searchBySeller: indexes.sellers
-});
+const { applyFiltering, updateIndexes } = initFiltering(sampleTable.filter.elements);
 
 const applySearching = initSearching('search');
 
+// Инициализация приложения
+async function init() {
+    const indexes = await api.getIndexes();
+
+    updateIndexes(sampleTable.filter.elements, {
+        searchBySeller: indexes.sellers
+    });
+
+    // Первоначальный рендер
+    await render();
+}
+
+// Монтируем в DOM
 const appRoot = document.querySelector('#app');
 appRoot.appendChild(sampleTable.container);
 
-render();
+// Запускаем приложение
+init();
 
