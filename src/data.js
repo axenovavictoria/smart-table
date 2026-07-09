@@ -8,7 +8,7 @@ let lastResult = null;
 let lastQuery = null;
 
 export function initData() {
-    // Функция для приведения данных к формату таблицы
+    // Функция для приведения строк в тот вид, который нужен нашей таблице
     const mapRecords = (data) => data.map(item => ({
         id: item.receipt_id,
         date: item.date,
@@ -17,33 +17,24 @@ export function initData() {
         total: item.total_amount
     }));
 
-    // Получение индексов (продавцов и покупателей)
+    // Функция получения индексов
     const getIndexes = async () => {
         if (!sellersCache || !customersCache) {
-            const [sellersData, customersData] = await Promise.all([
+            // Сервер уже возвращает готовый объект { id: { id, first_name, last_name }, ... }
+            // Просто сохраняем его как есть
+            [sellersCache, customersCache] = await Promise.all([
                 fetch(`${BASE_URL}/sellers`).then(res => res.json()),
                 fetch(`${BASE_URL}/customers`).then(res => res.json()),
             ]);
-
-            // Преобразуем массив в объект для быстрого доступа по id
-            sellersCache = sellersData.reduce((acc, seller) => {
-                acc[seller.id] = `${seller.first_name} ${seller.last_name}`;
-                return acc;
-            }, {});
-
-            customersCache = customersData.reduce((acc, customer) => {
-                acc[customer.id] = `${customer.first_name} ${customer.last_name}`;
-                return acc;
-            }, {});
         }
 
-        return {
-            sellers: sellersCache,
-            customers: customersCache
+        return { 
+            sellers: sellersCache, 
+            customers: customersCache 
         };
     };
 
-    // Получение записей с сервера
+    // Функция получения записей о продажах с сервера
     const getRecords = async (query = {}, isUpdated = false) => {
         const qs = new URLSearchParams(query);
         const nextQuery = qs.toString();
